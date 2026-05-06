@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
+import { ExportPreset, exportPresets } from "@/app/lib/export-presets";
 
 const supportedMimeTypes = ["image/jpeg", "image/png", "image/webp"] as const;
 
@@ -19,6 +20,7 @@ type SharpMetadata = {
 };
 
 type ProcessResponse = {
+  preset: ExportPreset;
   original: {
     filename: string;
     mimetype: SupportedMimeType;
@@ -39,6 +41,24 @@ type ProcessResponse = {
     base64: string;
   };
   processingTimeMs: number;
+};
+
+const presetTransformations: Record<
+  ExportPreset,
+  { resize: sharp.ResizeOptions; webp: sharp.WebpOptions }
+> = {
+  thumbnail: {
+    resize: { width: 320, withoutEnlargement: true },
+    webp: { quality: 72 },
+  },
+  "web-optimized": {
+    resize: { width: 1200, withoutEnlargement: true },
+    webp: { quality: 85 },
+  },
+  "high-quality": {
+    resize: { width: 2400, withoutEnlargement: true },
+    webp: { quality: 95 },
+  },
 };
 
 function assertSupportedMimeType(mimetype: string): asserts mimetype is SupportedMimeType {
@@ -73,15 +93,26 @@ function buildOutputFilename(filename: string): string {
 export async function POST(request: Request) {
   const formData = await request.formData();
   const image = formData.get("image");
+  const presetValue = formData.get("preset");
 
   if (!(image instanceof File)) {
     return NextResponse.json({ message: "Upload an image file in the image field." }, { status: 400 });
   }
 
+  if (typeof presetValue !== "string" || !exportPresets.includes(presetValue as ExportPreset)) {
+    return NextResponse.json(
+      { message: "Choose a valid export preset: Thumbnail, Web optimized, or High quality." },
+      { status: 400 },
+    );
+  }
+
+  const preset = presetValue as ExportPreset;
+
   Sentry.setContext("upload", {
     filename: image.name,
     mimetype: image.type,
     size: image.size,
+    preset,
   });
 
   assertSupportedMimeType(image.type);
@@ -91,13 +122,14 @@ export async function POST(request: Request) {
   const originalMetadata = await sharp(inputBuffer).metadata();
 
   const outputBuffer = await sharp(inputBuffer)
-    .resize({ width: 1200, withoutEnlargement: true })
-    .webp({ quality: 85 })
+    .resize(presetTransformations[preset].resize)
+    .webp(presetTransformations[preset].webp)
     .toBuffer();
   const processedMetadata = await sharp(outputBuffer).metadata();
   const processingTimeMs = Math.round(performance.now() - startedAt);
 
   const response: ProcessResponse = {
+    preset,
     original: {
       filename: image.name,
       mimetype: image.type,

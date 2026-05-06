@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, DragEvent, FormEvent, useMemo, useState } from "react";
+import { ExportPreset, exportPresetLabels, exportPresets } from "./lib/export-presets";
 
 type ImageMetadata = {
   width: number | null;
@@ -11,6 +12,7 @@ type ImageMetadata = {
 };
 
 type ProcessResponse = {
+  preset: ExportPreset;
   original: ImageMetadata;
   processed: ImageMetadata & {
     base64: string;
@@ -58,6 +60,7 @@ function metadataRows(metadata: ImageMetadata): Array<[string, string]> {
 
 export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [preset, setPreset] = useState<ExportPreset>("web-optimized");
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<ProcessResponse | null>(null);
@@ -101,6 +104,7 @@ export default function Home() {
 
     const formData = new FormData();
     formData.append("image", selectedFile);
+    formData.append("preset", preset);
 
     setIsProcessing(true);
     setError(null);
@@ -191,6 +195,25 @@ export default function Home() {
               </div>
             ) : null}
 
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <label htmlFor="preset" className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                Export preset
+              </label>
+              <select
+                id="preset"
+                name="preset"
+                value={preset}
+                onChange={(event) => setPreset(event.target.value as ExportPreset)}
+                className="mt-3 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+              >
+                {exportPresets.map((presetValue) => (
+                  <option key={presetValue} value={presetValue}>
+                    {exportPresetLabels[presetValue]}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <button
               type="submit"
               disabled={!selectedFile || isProcessing}
@@ -212,9 +235,14 @@ export default function Home() {
               <div>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <h2 className="text-xl font-bold text-slate-950">Processing result</h2>
-                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-700">
-                    {result.processingTimeMs} ms
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-sky-100 px-3 py-1 text-sm font-semibold text-sky-700">
+                      {exportPresetLabels[result.preset]}
+                    </span>
+                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-700">
+                      {result.processingTimeMs} ms
+                    </span>
+                  </div>
                 </div>
 
                 <div className="mt-5 grid gap-5 sm:grid-cols-2">
