@@ -1,0 +1,25 @@
+---
+description: Architecture and component patterns for the asset-processor codebase
+globs: ["app/**/*.tsx", "app/**/*.ts"]
+---
+
+# Architecture Rules
+
+## Component Structure
+- Every new UI component MUST be placed in its own file under `components/` (not inline in page.tsx)
+- Components must use named exports, never default exports (except page.tsx and layout.tsx which Next.js requires as default)
+- All component props must be defined as a named `type` (not inline), suffixed with `Props` (e.g., `type HistoryPanelProps = { ... }`)
+
+## State Management
+- Any reusable stateful logic MUST be extracted into a custom hook under `hooks/`
+- Custom hooks must be prefixed with `use` and placed in their own file (e.g., `hooks/useProcessingHistory.ts`)
+- Never use `any` type — all state must be fully typed
+
+## Styling
+- Use only Tailwind utility classes — no inline styles, no CSS modules, no styled-components
+- Follow the existing color palette: slate-900/950 for text, sky-600 for primary actions, emerald for success states, red for errors
+- All interactive elements must have visible focus states using Tailwind's `focus:` variants
+
+## File Organization
+- Shared TypeScript types must live in `types/` directory with descriptive filenames
+- Utility/helper functions must live in `lib/` directory

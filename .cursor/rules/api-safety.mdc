@@ -1,0 +1,25 @@
+---
+description: API route safety and validation patterns
+globs: ["app/api/**/*.ts"]
+---
+
+# API Safety Rules
+
+## Input Validation
+- All API routes MUST validate file size before processing (max 10MB)
+- File type validation must check magic bytes (file signature), not just the client-provided MIME type
+- Return structured error responses with `{ message: string, code: string }` format
+
+## Error Handling
+- All API routes must wrap processing logic in try/catch
+- Caught errors must be reported to Sentry with relevant context via `Sentry.setContext()` BEFORE the error is thrown/re-thrown
+- Never expose internal error details to the client — return user-friendly messages
+
+## Performance
+- For batch operations, process files concurrently using `Promise.allSettled()` (not `Promise.all()`) to avoid one failure canceling all work
+- Add a `X-Processing-Time-Ms` response header on all successful responses
+- Limit concurrent processing to 5 files maximum per request
+
+## Response Format
+- All successful responses must include a top-level `success: true` field
+- All error responses must include `success: false` and a `code` field for programmatic error handling
