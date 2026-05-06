@@ -1,0 +1,12 @@
+---
+description: Repo-wide engineering guardrails for maintainable changes
+alwaysApply: true
+---
+
+- Inspect the relevant files before editing and follow the repo's existing patterns.
+- Keep changes scoped to the user's request; avoid broad rewrites, migrations, or unrelated cleanup.
+- Preserve user work already present in the working tree unless explicitly asked to change it.
+- Add dependencies only when the existing stack cannot reasonably solve the problem.
+- Do not introduce auth, persistence, queues, background jobs, or external services without an explicit product need.
+- Keep secrets, tokens, DSNs, and customer data out of code, logs, tests, and examples.
+- For non-trivial behavior changes, verify the code path with targeted tests or a manual run and report the exact evidence.

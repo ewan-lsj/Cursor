@@ -1,0 +1,12 @@
+---
+description: Next.js API, validation, and observability standards
+globs: app/api/**/*.ts,app/**/*.tsx,instrumentation*.ts,sentry*.config.ts
+alwaysApply: false
+---
+
+- Treat route handlers as trust boundaries: validate form fields, query params, headers, and payloads before using them.
+- Return structured 4xx responses for expected user or client mistakes; reserve thrown exceptions for unexpected failures.
+- Capture useful operational context for server-side failures, but never include secrets, tokens, raw file contents, or unnecessary personal data.
+- Preserve Sentry wiring when changing request, error, or image-processing flows.
+- Keep client-facing error messages clear and actionable without exposing stack traces or internal service details.
+- Use typed constants or narrow unions for request options shared between UI and API code.
