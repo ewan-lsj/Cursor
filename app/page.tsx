@@ -143,8 +143,8 @@ export default function Home() {
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">Sentry demo</p>
             <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-950">Asset Processor</h1>
             <p className="mt-3 text-base text-slate-600">
-              Upload a JPEG, PNG, or WebP to resize and convert it. Upload TIFF or HEIC to trigger the
-              intentional Sentry exception path.
+              Upload a JPEG, PNG, or WebP to resize and convert it. TIFF or HEIC uploads are
+              rejected with a structured 415 response.
             </p>
           </div>
 
