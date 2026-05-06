@@ -22,3 +22,17 @@ npm run dev
 Then visit [http://localhost:3000](http://localhost:3000).
 
 Copy `.env.example` to `.env.local` and set the Sentry DSN values for your project before running the demo.
+
+## Sentry on Vercel
+
+The app is configured for the Sentry organization `ewan-demo` and project `javascript-nextjs`. In the linked Vercel project, set these environment variables for Production and Preview deployments:
+
+```bash
+NEXT_PUBLIC_SENTRY_DSN=<project client DSN>
+SENTRY_DSN=<project client DSN>
+SENTRY_ORG=ewan-demo
+SENTRY_PROJECT=javascript-nextjs
+SENTRY_AUTH_TOKEN=<token with org:read and project:releases>
+```
+
+`NEXT_PUBLIC_SENTRY_DSN` enables browser error capture, `SENTRY_DSN` enables server and edge runtime capture, and `SENTRY_AUTH_TOKEN` lets `next build` upload source maps so production stack traces resolve to readable files. The Sentry Vercel integration can provide these variables automatically when it is connected to the same project.
