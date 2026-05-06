@@ -4,6 +4,7 @@ import sharp from "sharp";
 import { ExportPreset, exportPresets } from "@/app/lib/export-presets";
 
 const supportedMimeTypes = ["image/jpeg", "image/png", "image/webp"] as const;
+const maxUploadSizeBytes = 20 * 1024 * 1024;
 
 type SupportedMimeType = (typeof supportedMimeTypes)[number];
 
@@ -61,12 +62,8 @@ const presetTransformations: Record<
   },
 };
 
-function assertSupportedMimeType(mimetype: string): asserts mimetype is SupportedMimeType {
-  if (!supportedMimeTypes.includes(mimetype as SupportedMimeType)) {
-    throw new Error(
-      `Unsupported file type: ${mimetype}. Only JPEG, PNG, and WebP are supported.`,
-    );
-  }
+function isSupportedMimeType(mimetype: string): mimetype is SupportedMimeType {
+  return supportedMimeTypes.includes(mimetype as SupportedMimeType);
 }
 
 function toSharpMetadata(metadata: sharp.Metadata, size?: number): SharpMetadata {
@@ -99,6 +96,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Upload an image file in the image field." }, { status: 400 });
   }
 
+  if (image.size > maxUploadSizeBytes) {
+    return NextResponse.json(
+      { message: "File is too large. Upload an image up to 20 MB." },
+      { status: 413 },
+    );
+  }
+
   if (typeof presetValue !== "string" || !exportPresets.includes(presetValue as ExportPreset)) {
     return NextResponse.json(
       { message: "Choose a valid export preset: Thumbnail, Web optimized, or High quality." },
@@ -115,7 +119,14 @@ export async function POST(request: Request) {
     preset,
   });
 
-  assertSupportedMimeType(image.type);
+  if (!isSupportedMimeType(image.type)) {
+    return NextResponse.json(
+      {
+        message: `Unsupported file type: ${image.type || "unknown"}. Only JPEG, PNG, and WebP are supported.`,
+      },
+      { status: 400 },
+    );
+  }
 
   const startedAt = performance.now();
   const inputBuffer = Buffer.from(await image.arrayBuffer());
