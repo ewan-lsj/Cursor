@@ -20,7 +20,7 @@ export default function Error({
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-red-600">Application error</p>
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">Something went wrong</h1>
         <p className="mt-3 text-base text-slate-600">
-          The error has been reported to Sentry. You can try again or refresh the page.
+          The error has been reported. You can try again or refresh the page.
         </p>
         <button
           type="button"

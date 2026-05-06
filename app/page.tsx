@@ -140,11 +140,9 @@ export default function Home() {
       <section className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-4xl items-center justify-center">
         <div className="w-full rounded-3xl bg-white p-8 shadow-2xl shadow-black/30 sm:p-10">
           <div className="mb-8 text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">Sentry demo</p>
-            <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-950">Asset Processor</h1>
+            <h1 className="text-4xl font-bold tracking-tight text-slate-950">Asset Processor</h1>
             <p className="mt-3 text-base text-slate-600">
-              Upload a JPEG, PNG, or WebP to resize and convert it. Upload TIFF or HEIC to trigger the
-              intentional Sentry exception path.
+              Upload an image to resize and convert it to an optimized WebP format.
             </p>
           </div>
 
