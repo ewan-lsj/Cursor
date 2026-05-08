@@ -6,6 +6,22 @@ const supportedMimeTypes = ["image/jpeg", "image/png", "image/webp"] as const;
 
 type SupportedMimeType = (typeof supportedMimeTypes)[number];
 
+const qualityLevels = ["low", "medium", "high"] as const;
+
+type QualityLevel = (typeof qualityLevels)[number];
+
+const defaultQualityLevel: QualityLevel = "medium";
+
+const qualityToWebpQuality: Record<QualityLevel, number> = {
+  low: 60,
+  medium: 85,
+  high: 95,
+};
+
+function isQualityLevel(value: unknown): value is QualityLevel {
+  return typeof value === "string" && (qualityLevels as readonly string[]).includes(value);
+}
+
 type SharpMetadata = {
   width?: number;
   height?: number;
@@ -37,6 +53,7 @@ type ProcessResponse = {
     format: string | null;
     metadata: SharpMetadata;
     base64: string;
+    quality: QualityLevel;
   };
   processingTimeMs: number;
 };
@@ -78,10 +95,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Upload an image file in the image field." }, { status: 400 });
   }
 
+  const rawQuality = formData.get("quality");
+  let quality: QualityLevel;
+
+  if (rawQuality === null || rawQuality === "") {
+    quality = defaultQualityLevel;
+  } else if (isQualityLevel(rawQuality)) {
+    quality = rawQuality;
+  } else {
+    return NextResponse.json(
+      {
+        message: `Invalid quality option. Use one of: ${qualityLevels.join(", ")}.`,
+      },
+      { status: 400 },
+    );
+  }
+
   Sentry.setContext("upload", {
     filename: image.name,
     mimetype: image.type,
     size: image.size,
+    quality,
   });
 
   assertSupportedMimeType(image.type);
@@ -92,7 +126,7 @@ export async function POST(request: Request) {
 
   const outputBuffer = await sharp(inputBuffer)
     .resize({ width: 1200, withoutEnlargement: true })
-    .webp({ quality: 85 })
+    .webp({ quality: qualityToWebpQuality[quality] })
     .toBuffer();
   const processedMetadata = await sharp(outputBuffer).metadata();
   const processingTimeMs = Math.round(performance.now() - startedAt);
@@ -116,6 +150,7 @@ export async function POST(request: Request) {
       format: processedMetadata.format ?? null,
       metadata: toSharpMetadata(processedMetadata, outputBuffer.byteLength),
       base64: outputBuffer.toString("base64"),
+      quality,
     },
     processingTimeMs,
   };

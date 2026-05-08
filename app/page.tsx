@@ -10,10 +10,21 @@ type ImageMetadata = {
   mimetype: string;
 };
 
+const qualityLevels = ["low", "medium", "high"] as const;
+
+type QualityLevel = (typeof qualityLevels)[number];
+
+const qualityLabels: Record<QualityLevel, string> = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+};
+
 type ProcessResponse = {
   original: ImageMetadata;
   processed: ImageMetadata & {
     base64: string;
+    quality: QualityLevel;
   };
   processingTimeMs: number;
 };
@@ -62,6 +73,7 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<ProcessResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [quality, setQuality] = useState<QualityLevel>("medium");
 
   const previewDataUrl = useMemo(() => {
     if (!result) {
@@ -101,6 +113,7 @@ export default function Home() {
 
     const formData = new FormData();
     formData.append("image", selectedFile);
+    formData.append("quality", quality);
 
     setIsProcessing(true);
     setError(null);
@@ -191,6 +204,44 @@ export default function Home() {
               </div>
             ) : null}
 
+            <fieldset className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <legend className="px-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+                Conversion quality
+              </legend>
+              <div
+                role="radiogroup"
+                aria-label="Conversion quality"
+                className="mt-2 grid gap-2 sm:grid-cols-3"
+              >
+                {qualityLevels.map((level) => {
+                  const isSelected = quality === level;
+                  return (
+                    <label
+                      key={level}
+                      className={`flex cursor-pointer items-center justify-center rounded-xl border px-4 py-3 text-sm font-semibold transition ${
+                        isSelected
+                          ? "border-sky-500 bg-sky-50 text-sky-800 shadow-sm"
+                          : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="quality"
+                        value={level}
+                        checked={isSelected}
+                        onChange={() => setQuality(level)}
+                        className="sr-only"
+                      />
+                      {qualityLabels[level]}
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="mt-3 text-xs text-slate-500">
+                Lower quality produces smaller files; higher quality preserves more detail.
+              </p>
+            </fieldset>
+
             <button
               type="submit"
               disabled={!selectedFile || isProcessing}
@@ -219,7 +270,13 @@ export default function Home() {
 
                 <div className="mt-5 grid gap-5 sm:grid-cols-2">
                   <MetadataPanel title="Original" rows={metadataRows(result.original)} />
-                  <MetadataPanel title="WebP output" rows={metadataRows(result.processed)} />
+                  <MetadataPanel
+                    title="WebP output"
+                    rows={[
+                      ...metadataRows(result.processed),
+                      ["Quality", qualityLabels[result.processed.quality]],
+                    ]}
+                  />
                 </div>
 
                 <a
