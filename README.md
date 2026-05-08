@@ -36,3 +36,12 @@ SENTRY_AUTH_TOKEN=<token with org:read and project:releases>
 ```
 
 `NEXT_PUBLIC_SENTRY_DSN` enables browser error capture, `SENTRY_DSN` enables server and edge runtime capture, and `SENTRY_AUTH_TOKEN` lets `next build` upload source maps so production stack traces resolve to readable files. The Sentry Vercel integration can provide these variables automatically when it is connected to the same project.
+
+## Cursor Cloud demo assets
+
+For a two-part live demo (automation first, then runtime enforcement), use:
+
+- `.cursor/cursor-cloud-demo-runbook.md`
+- `.cursor/cursor-cloud-hooks-template.md`
+
+These build on existing repo policies in `.cursor/rules/*` and subagents in `.cursor/agents/*`.

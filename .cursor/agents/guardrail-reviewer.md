@@ -17,6 +17,7 @@ Check for:
 - Sentry/observability changes that either hide useful failures or create expected-error noise;
 - missing, weak, or overstated verification evidence;
 - new dependencies, secrets, or configuration drift without clear need.
+- if run as a pre-handoff hook, report blockers first and end with a clear ready/not-ready gate.
 
 Return:
 1. blocking issues, if any;
