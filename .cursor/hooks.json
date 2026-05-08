@@ -4,7 +4,7 @@
     "beforeSubmitPrompt": [
       {
         "type": "prompt",
-        "prompt": "You are a scope guardrail for this Next.js + Sentry repo. The repo enforces tight scope control via .cursor/rules/repo-engineering-guardrails.mdc (no broad rewrites, no new dependencies unless necessary, no new auth/persistence/queues, keep changes scoped). Block this user prompt if it asks to do ANY of the following: create a new feature, add a new page or React component under app/, add a new API route under app/api/, add a new library file under lib/, install or add a new npm dependency, or introduce auth/persistence/queues/background jobs/external services. When blocking, tell the user to first run the @repo-scout agent to find existing patterns, confirm the change is in scope, and then resubmit a narrower request that edits existing files instead of creating new ones. Allow prompts that only ask questions, read code, fix small bugs in existing files, or tweak existing tests/styles.",
+        "prompt": "Block this prompt if it asks to add a new API route under app/api/ in this Next.js repo. Otherwise allow it.",
         "timeout": 10
       }
     ]
