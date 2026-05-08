@@ -2,6 +2,14 @@ import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 
+import {
+  DEFAULT_QUALITY,
+  QUALITY_TO_WEBP,
+  QUALITY_VALUES,
+  isQuality,
+  type Quality,
+} from "./quality";
+
 const supportedMimeTypes = ["image/jpeg", "image/png", "image/webp"] as const;
 
 type SupportedMimeType = (typeof supportedMimeTypes)[number];
@@ -39,6 +47,7 @@ type ProcessResponse = {
     base64: string;
   };
   processingTimeMs: number;
+  quality: Quality;
 };
 
 function assertSupportedMimeType(mimetype: string): asserts mimetype is SupportedMimeType {
@@ -78,10 +87,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Upload an image file in the image field." }, { status: 400 });
   }
 
+  const rawQuality = formData.get("quality");
+  let quality: Quality = DEFAULT_QUALITY;
+  if (rawQuality !== null) {
+    if (!isQuality(rawQuality)) {
+      return NextResponse.json(
+        {
+          message: `Quality must be one of ${QUALITY_VALUES.join(", ")}.`,
+        },
+        { status: 400 },
+      );
+    }
+    quality = rawQuality;
+  }
+
   Sentry.setContext("upload", {
     filename: image.name,
     mimetype: image.type,
     size: image.size,
+    quality,
   });
 
   assertSupportedMimeType(image.type);
@@ -92,7 +116,7 @@ export async function POST(request: Request) {
 
   const outputBuffer = await sharp(inputBuffer)
     .resize({ width: 1200, withoutEnlargement: true })
-    .webp({ quality: 85 })
+    .webp({ quality: QUALITY_TO_WEBP[quality] })
     .toBuffer();
   const processedMetadata = await sharp(outputBuffer).metadata();
   const processingTimeMs = Math.round(performance.now() - startedAt);
@@ -118,6 +142,7 @@ export async function POST(request: Request) {
       base64: outputBuffer.toString("base64"),
     },
     processingTimeMs,
+    quality,
   };
 
   return NextResponse.json(response);

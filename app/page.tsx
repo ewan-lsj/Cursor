@@ -2,6 +2,8 @@
 
 import { ChangeEvent, DragEvent, FormEvent, useMemo, useState } from "react";
 
+import { DEFAULT_QUALITY, QUALITY_VALUES, type Quality } from "./api/process/quality";
+
 type ImageMetadata = {
   width: number | null;
   height: number | null;
@@ -16,6 +18,19 @@ type ProcessResponse = {
     base64: string;
   };
   processingTimeMs: number;
+  quality: Quality;
+};
+
+const qualityLabels: Record<Quality, string> = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+};
+
+const qualityHints: Record<Quality, string> = {
+  low: "Smallest file, lower fidelity",
+  medium: "Balanced (default)",
+  high: "Best fidelity, larger file",
 };
 
 const acceptedTypes = [
@@ -62,6 +77,7 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<ProcessResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [quality, setQuality] = useState<Quality>(DEFAULT_QUALITY);
 
   const previewDataUrl = useMemo(() => {
     if (!result) {
@@ -101,6 +117,7 @@ export default function Home() {
 
     const formData = new FormData();
     formData.append("image", selectedFile);
+    formData.append("quality", quality);
 
     setIsProcessing(true);
     setError(null);
@@ -171,6 +188,39 @@ export default function Home() {
               />
             </label>
 
+            <fieldset className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <legend className="px-1 text-sm font-semibold uppercase tracking-wide text-slate-500">
+                Conversion quality
+              </legend>
+              <div
+                role="radiogroup"
+                aria-label="Conversion quality"
+                className="mt-3 grid gap-2 sm:grid-cols-3"
+              >
+                {QUALITY_VALUES.map((value) => {
+                  const isSelected = quality === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      role="radio"
+                      aria-checked={isSelected}
+                      disabled={isProcessing}
+                      onClick={() => setQuality(value)}
+                      className={`flex flex-col items-start rounded-xl border px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                        isSelected
+                          ? "border-sky-500 bg-white text-slate-950 shadow-sm ring-2 ring-sky-500"
+                          : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50"
+                      }`}
+                    >
+                      <span className="text-sm font-bold">{qualityLabels[value]}</span>
+                      <span className="mt-1 text-xs text-slate-500">{qualityHints[value]}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+
             {selectedFile ? (
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Selected file</h2>
@@ -212,9 +262,14 @@ export default function Home() {
               <div>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <h2 className="text-xl font-bold text-slate-950">Processing result</h2>
-                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-700">
-                    {result.processingTimeMs} ms
-                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="rounded-full bg-sky-100 px-3 py-1 text-sm font-semibold text-sky-700">
+                      Quality: {qualityLabels[result.quality]}
+                    </span>
+                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-700">
+                      {result.processingTimeMs} ms
+                    </span>
+                  </div>
                 </div>
 
                 <div className="mt-5 grid gap-5 sm:grid-cols-2">
