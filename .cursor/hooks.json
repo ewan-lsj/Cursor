@@ -1,10 +1,11 @@
 {
   "version": 1,
   "hooks": {
-    "postToolUse": [
+    "beforeShellExecution": [
       {
-        "command": "node .cursor/hooks/on-write-nudge.mjs",
-        "matcher": "Write"
+        "type": "prompt",
+        "prompt": "Does this command look safe to execute? Only allow read-only operations (e.g. ls, cat, grep, git status, git log, git diff). Block anything that writes to disk, modifies git state, installs packages, makes network requests, or has any side effects.",
+        "timeout": 10
       }
     ]
   }
