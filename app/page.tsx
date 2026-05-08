@@ -2,7 +2,7 @@
 
 import { ChangeEvent, DragEvent, FormEvent, useMemo, useState } from "react";
 
-import { ACCEPTED_UPLOAD_TYPES } from "@/lib/image-formats";
+import { ACCEPTED_UPLOAD_TYPES, MAX_UPLOAD_LABEL } from "@/lib/image-formats";
 
 type ImageMetadata = {
   width: number | null;
@@ -147,6 +147,7 @@ export default function Home() {
             >
               <span className="text-lg font-semibold text-slate-900">Drop an image here or click to browse</span>
               <span className="mt-2 text-sm">Visually accepts JPG, PNG, WebP, TIFF, and HEIC</span>
+              <span className="mt-1 text-xs text-slate-500">Maximum upload size {MAX_UPLOAD_LABEL}</span>
               <input
                 type="file"
                 name="image"

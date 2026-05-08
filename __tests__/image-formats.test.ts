@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { ACCEPTED_UPLOAD_TYPES, SUPPORTED_MIME_TYPES } from "../lib/image-formats";
+import {
+  ACCEPTED_UPLOAD_TYPES,
+  MAX_UPLOAD_BYTES,
+  MAX_UPLOAD_LABEL,
+  SUPPORTED_MIME_TYPES,
+} from "../lib/image-formats";
 
 describe("SUPPORTED_MIME_TYPES", () => {
   it("contains exactly JPEG, PNG, and WebP MIME types", () => {
@@ -30,5 +35,15 @@ describe("ACCEPTED_UPLOAD_TYPES", () => {
     for (const mime of SUPPORTED_MIME_TYPES) {
       expect(ACCEPTED_UPLOAD_TYPES).toContain(mime);
     }
+  });
+});
+
+describe("MAX_UPLOAD_BYTES", () => {
+  it("caps uploads at exactly 10 MiB", () => {
+    expect(MAX_UPLOAD_BYTES).toBe(10 * 1024 * 1024);
+  });
+
+  it("uses a human-friendly label that matches the byte cap", () => {
+    expect(MAX_UPLOAD_LABEL).toBe("10 MB");
   });
 });

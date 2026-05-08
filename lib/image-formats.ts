@@ -6,6 +6,16 @@ export const SUPPORTED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as
 
 export type SupportedMimeType = (typeof SUPPORTED_MIME_TYPES)[number];
 
+/**
+ * Hard cap on uploaded image size, enforced by the API and surfaced in the UI.
+ * Sharp can technically handle larger payloads, but anything beyond this is
+ * almost always a misuse of the demo and risks tying up the route handler.
+ */
+export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+
+/** Human-friendly rendering of {@link MAX_UPLOAD_BYTES} for error messages and UI hints. */
+export const MAX_UPLOAD_LABEL = "10 MB";
+
 /** Values for <input accept="..."> — superset of SUPPORTED_MIME_TYPES (incl. TIFF/HEIC + extensions). */
 export const ACCEPTED_UPLOAD_TYPES = [
   ...SUPPORTED_MIME_TYPES,

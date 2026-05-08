@@ -2,7 +2,12 @@ import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 
-import { SUPPORTED_MIME_TYPES, type SupportedMimeType } from "@/lib/image-formats";
+import {
+  MAX_UPLOAD_BYTES,
+  MAX_UPLOAD_LABEL,
+  SUPPORTED_MIME_TYPES,
+  type SupportedMimeType,
+} from "@/lib/image-formats";
 
 type SharpMetadata = {
   width?: number;
@@ -76,11 +81,30 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Upload an image file in the image field." }, { status: 400 });
   }
 
+  // Sentry "upload" context: filename, mimetype, size, processing stage label only.
   Sentry.setContext("upload", {
     filename: image.name,
     mimetype: image.type,
     size: image.size,
+    stage: "received",
   });
+
+  if (image.size > MAX_UPLOAD_BYTES) {
+    // Surface the rejection to Sentry so the upload context above is debuggable.
+    // Tag fields: processing stage label only (no user-derived values).
+    Sentry.captureMessage("Upload rejected: exceeds max size", {
+      level: "warning",
+      tags: { stage: "upload-size-limit" },
+    });
+
+    return NextResponse.json(
+      {
+        message: `That image is too large. Please upload a file up to ${MAX_UPLOAD_LABEL}.`,
+        maxBytes: MAX_UPLOAD_BYTES,
+      },
+      { status: 413 },
+    );
+  }
 
   assertSupportedMimeType(image.type);
 
