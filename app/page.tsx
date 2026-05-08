@@ -2,6 +2,8 @@
 
 import { ChangeEvent, DragEvent, FormEvent, useMemo, useState } from "react";
 
+import { ACCEPTED_UPLOAD_TYPES } from "@/lib/image-formats";
+
 type ImageMetadata = {
   width: number | null;
   height: number | null;
@@ -17,23 +19,6 @@ type ProcessResponse = {
   };
   processingTimeMs: number;
 };
-
-const acceptedTypes = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/tiff",
-  "image/heic",
-  "image/heif",
-  ".jpg",
-  ".jpeg",
-  ".png",
-  ".webp",
-  ".tif",
-  ".tiff",
-  ".heic",
-  ".heif",
-];
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) {
@@ -165,7 +150,7 @@ export default function Home() {
               <input
                 type="file"
                 name="image"
-                accept={acceptedTypes.join(",")}
+                accept={ACCEPTED_UPLOAD_TYPES.join(",")}
                 className="sr-only"
                 onChange={handleInputChange}
               />
