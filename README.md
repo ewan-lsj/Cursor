@@ -43,5 +43,8 @@ For a two-part live demo (automation first, then runtime enforcement), use:
 
 - `.cursor/cursor-cloud-demo-runbook.md`
 - `.cursor/cursor-cloud-hooks-template.md`
+- `.cursor/hooks.json`
+- `.cursor/hooks/after-file-edit-check.sh`
+- `.cursor/hooks/before-submit-guardrail.sh`
 
-These build on existing repo policies in `.cursor/rules/*` and subagents in `.cursor/agents/*`.
+Runtime enforcement is driven by `.cursor/hooks.json` and executable scripts in `.cursor/hooks/`. The runbook/template files are presenter guidance only.

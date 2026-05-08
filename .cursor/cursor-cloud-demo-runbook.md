@@ -1,6 +1,6 @@
 # Cursor Cloud Live Demo Runbook
 
-This runbook supports a two-part live demo:
+This runbook supports a two-part live demo (15 minutes max):
 
 1. Demo 1: Existing automation + intentional Sentry issue.
 2. Demo 2: Runtime quality enforcement with hooks, rules, and subagents.
@@ -40,21 +40,17 @@ Use this line between demos:
 
 This demo shows policy and quality enforcement as part of the runtime workflow.
 
-### Hook flow to present
+### Hook flow to present (minimal runtime setup)
 
-1. **Pre-implementation hook**: run `repo-scout` subagent.
-2. **Post-edit hook**: run `npm run lint` and `npm run typecheck`.
-3. **Pre-handoff/pre-PR hook**: run `guardrail-reviewer` subagent.
+1. `afterFileEdit` executes `.cursor/hooks/after-file-edit-check.sh`.
+2. `beforeSubmitPrompt` executes `.cursor/hooks/before-submit-guardrail.sh`.
+3. Rule and subagent files become hard runtime prerequisites.
 
 ### Expected signals
 
-- `repo-scout` returns minimal file scope, data flow boundaries, and verification commands.
-- lint/typecheck pass and provide objective quality signal.
-- `guardrail-reviewer` reports:
-  1. blocking issues;
-  2. non-blocking concerns;
-  3. verification gaps;
-  4. ready/not-ready recommendation.
+- `afterFileEdit` returns `{ "ok": true }` when rule files are present.
+- `beforeSubmitPrompt` returns `{ "ok": true }` when rule + subagent files are present.
+- Missing guardrail assets return `exit 2` to block submit.
 
 ### Demo 2 prompt template
 
@@ -66,13 +62,14 @@ This demo shows policy and quality enforcement as part of the runtime workflow.
 - **Subagents/skills** answer: how execution is structured (`repo-scout`, `guardrail-reviewer`).
 - **Hooks** answer: when enforcement is executed (automatically at each stage).
 
+## Runtime source of truth
+
+- `.cursor/hooks.json`
+- `.cursor/hooks/after-file-edit-check.sh`
+- `.cursor/hooks/before-submit-guardrail.sh`
+
 ## Canonical references
 
-- Rules:
-  - `.cursor/rules/repo-engineering-guardrails.mdc`
-  - `.cursor/rules/next-api-observability.mdc`
-- Subagents:
-  - `.cursor/agents/repo-scout.md`
-  - `.cursor/agents/guardrail-reviewer.md`
-- Sentry scenario and app behavior:
-  - `README.md`
+- Rules: `.cursor/rules/repo-engineering-guardrails.mdc`, `.cursor/rules/next-api-observability.mdc`
+- Subagents: `.cursor/agents/repo-scout.md`, `.cursor/agents/guardrail-reviewer.md`
+- Sentry scenario and app behavior: `README.md`
