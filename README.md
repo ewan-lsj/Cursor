@@ -2,15 +2,11 @@
 
 Next.js 14 image-processing demo for showcasing Sentry automated error triage.
 
-Upload a JPEG, PNG, or WebP image to resize it with Sharp, convert it to WebP, and inspect the returned metadata. Uploading a TIFF or HEIC is intentionally unsupported: the API throws before processing so the exception is surfaced to Sentry with upload context attached.
+Upload a JPEG, PNG, or WebP image to resize it with Sharp, convert it to WebP, and inspect the returned metadata. Uploads that are missing, empty, oversized, of an unsupported type, or corrupt return a structured 4xx JSON response without throwing, so the API does not surface client-side mistakes as Sentry errors.
 
 ## Sentry demo scenario
 
-1. Start the app locally.
-2. Open the upload page.
-3. Drop or select a `.tiff`, `.tif`, `.heic`, or `.heif` file.
-4. Click **Process Image**.
-5. The request throws `Unsupported file type...` from `app/api/process/route.ts`, allowing Sentry to capture the error and the `upload` context.
+`app/api/process/route.ts` attaches a low-PII `upload` context (filename, mimetype, size, processing stage) before invoking Sharp. Bad client uploads are returned as JSON with the appropriate 4xx status; only unexpected server-side failures during processing bubble up for Sentry to capture, and they do so with the same `upload` context attached.
 
 ## Run locally
 
