@@ -1,0 +1,11 @@
+---
+description: Prevent sensitive data leaking into Sentry error context
+globs: app/api/**/*.ts,sentry*.config.ts,instrumentation*.ts
+alwaysApply: false
+---
+
+- Never attach raw file buffers, base64 content, or binary data to Sentry contexts, breadcrumbs, or tags.
+- Never log or capture personally identifiable information (file path components that reveal user details, email addresses, session tokens).
+- Sentry context for file operations must be limited to: filename, mimetype, size in bytes, and a processing stage label.
+- Do not set Sentry tags or extras in a catch block that could contain values derived from untrusted user input without sanitisation.
+- If a new Sentry.setContext / Sentry.setExtra / Sentry.setTag call is added, a comment must identify which of the above allowed fields it captures.

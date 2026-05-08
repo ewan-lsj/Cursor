@@ -2,9 +2,7 @@ import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 
-const supportedMimeTypes = ["image/jpeg", "image/png", "image/webp"] as const;
-
-type SupportedMimeType = (typeof supportedMimeTypes)[number];
+import { SUPPORTED_MIME_TYPES, type SupportedMimeType } from "@/lib/image-formats";
 
 type SharpMetadata = {
   width?: number;
@@ -42,7 +40,7 @@ type ProcessResponse = {
 };
 
 function assertSupportedMimeType(mimetype: string): asserts mimetype is SupportedMimeType {
-  if (!supportedMimeTypes.includes(mimetype as SupportedMimeType)) {
+  if (!SUPPORTED_MIME_TYPES.includes(mimetype as SupportedMimeType)) {
     throw new Error(
       `Unsupported file type: ${mimetype}. Only JPEG, PNG, and WebP are supported.`,
     );
