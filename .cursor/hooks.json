@@ -1,11 +1,29 @@
 {
   "version": 1,
   "hooks": {
-    "beforeSubmitPrompt": [
+    "preToolUse": [
       {
-        "type": "prompt",
-        "prompt": "Block this prompt if it asks to add a new API route under app/api/ in this Next.js repo. Otherwise allow it.",
-        "timeout": 10
+        "matcher": "Write|Edit|MultiEdit",
+        "type": "command",
+        "command": "node .cursor/hooks/block-app-api-write.mjs",
+        "failClosed": true,
+        "timeout": 5
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "type": "command",
+        "command": "node .cursor/hooks/block-app-api-shell.mjs",
+        "failClosed": true,
+        "timeout": 5
+      }
+    ],
+    "postToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "type": "command",
+        "command": "node .cursor/hooks/on-write-nudge.mjs",
+        "timeout": 5
       }
     ]
   }
