@@ -41,6 +41,32 @@ function metadataRows(metadata: ImageMetadata): Array<[string, string]> {
   ];
 }
 
+// Map raw API/exception strings to a short, user-actionable message so the
+// banner never leaks internal copy or stack-trace text to the end user.
+function toUserFacingError(message: string | null | undefined): string {
+  const fallback = "We couldn't process that image. Please try a different file.";
+
+  if (!message) {
+    return fallback;
+  }
+
+  const lower = message.toLowerCase();
+
+  if (lower.includes("unsupported file type") || lower.includes("only jpeg")) {
+    return fallback;
+  }
+
+  if (lower.includes("upload an image")) {
+    return "Please choose an image to upload.";
+  }
+
+  if (lower.includes("network") || lower.includes("failed to fetch")) {
+    return "We couldn't reach the server. Check your connection and try again.";
+  }
+
+  return fallback;
+}
+
 export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -80,7 +106,7 @@ export default function Home() {
     event.preventDefault();
 
     if (!selectedFile) {
-      setError("Choose an image before processing.");
+      setError(toUserFacingError("upload an image"));
       return;
     }
 
@@ -97,146 +123,224 @@ export default function Home() {
         body: formData,
       });
 
-      const payload = (await response.json()) as unknown;
+      const payload = (await response.json().catch(() => null)) as unknown;
 
       if (!response.ok) {
-        const message =
+        const rawMessage =
           typeof payload === "object" &&
           payload !== null &&
           "message" in payload &&
           typeof payload.message === "string"
             ? payload.message
-            : "Image processing failed.";
+            : null;
 
-        setError(message);
+        setError(toUserFacingError(rawMessage));
         return;
       }
 
       setResult(payload as ProcessResponse);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Image processing failed.");
+      setError(toUserFacingError(requestError instanceof Error ? requestError.message : null));
     } finally {
       setIsProcessing(false);
     }
   }
 
   return (
-    <main className="min-h-screen bg-[#0f172a] px-6 py-10 text-slate-900">
-      <section className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-4xl items-center justify-center">
-        <div className="w-full rounded-3xl bg-white p-8 shadow-2xl shadow-black/30 sm:p-10">
-          <div className="mb-8 text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">Sentry demo</p>
-            <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-950">Asset Processor</h1>
-            <p className="mt-3 text-base text-slate-600">
-              Upload a JPEG, PNG, or WebP to resize and convert it. Upload TIFF or HEIC to trigger the
-              intentional Sentry exception path.
+    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-4">
+          <a href="/" className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-950 text-white">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+                aria-hidden="true"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <path d="m21 15-5-5L5 21" />
+              </svg>
+            </span>
+            <span className="text-base font-semibold tracking-tight text-slate-950">Asset Processor</span>
+          </a>
+          <span className="hidden text-xs font-medium text-slate-500 sm:inline">
+            Resize and convert to optimized WebP
+          </span>
+        </div>
+      </header>
+
+      <main className="flex-1 px-6 py-12">
+        <section className="mx-auto w-full max-w-3xl">
+          <div className="mb-8">
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+              Optimize images for the web
+            </h1>
+            <p className="mt-3 max-w-2xl text-base text-slate-600">
+              Upload a JPEG, PNG, WebP, or TIFF and we&apos;ll resize it to a sensible width and re-encode it
+              as WebP, ready to ship.
             </p>
           </div>
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <label
-              className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-10 text-center transition ${
-                isDragging
-                  ? "border-sky-500 bg-sky-50 text-sky-800"
-                  : "border-slate-300 bg-slate-50 text-slate-600 hover:border-sky-400 hover:bg-sky-50"
-              }`}
-              onDragEnter={() => setIsDragging(true)}
-              onDragLeave={() => setIsDragging(false)}
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={handleDrop}
-            >
-              <span className="text-lg font-semibold text-slate-900">Drop an image here or click to browse</span>
-              <span className="mt-2 text-sm">Visually accepts JPG, PNG, WebP, TIFF, and HEIC</span>
-              <input
-                type="file"
-                name="image"
-                accept={ACCEPTED_UPLOAD_TYPES.join(",")}
-                className="sr-only"
-                onChange={handleInputChange}
-              />
-            </label>
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              <label
+                className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-12 text-center transition ${
+                  isDragging
+                    ? "border-slate-900 bg-slate-50 text-slate-900"
+                    : "border-slate-300 bg-slate-50/60 text-slate-600 hover:border-slate-400 hover:bg-slate-50"
+                }`}
+                onDragEnter={() => setIsDragging(true)}
+                onDragLeave={() => setIsDragging(false)}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={handleDrop}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.75}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="mb-3 h-9 w-9 text-slate-400"
+                  aria-hidden="true"
+                >
+                  <path d="M12 16V4" />
+                  <path d="m6 10 6-6 6 6" />
+                  <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+                </svg>
+                <span className="text-base font-semibold text-slate-900">
+                  Drag an image here, or click to browse
+                </span>
+                <span className="mt-1.5 text-sm text-slate-500">JPG, PNG, WebP, or TIFF</span>
+                <input
+                  type="file"
+                  name="image"
+                  accept={ACCEPTED_UPLOAD_TYPES.join(",")}
+                  className="sr-only"
+                  onChange={handleInputChange}
+                />
+              </label>
 
-            {selectedFile ? (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Selected file</h2>
-                <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
-                  <div>
-                    <dt className="font-medium text-slate-500">Name</dt>
-                    <dd className="mt-1 break-all font-semibold text-slate-950">{selectedFile.name}</dd>
-                  </div>
-                  <div>
-                    <dt className="font-medium text-slate-500">Size</dt>
-                    <dd className="mt-1 font-semibold text-slate-950">{formatBytes(selectedFile.size)}</dd>
-                  </div>
-                  <div>
-                    <dt className="font-medium text-slate-500">MIME type</dt>
-                    <dd className="mt-1 font-semibold text-slate-950">{selectedFile.type || "unknown"}</dd>
-                  </div>
-                </dl>
+              {selectedFile ? (
+                <div className="rounded-xl border border-slate-200 bg-white p-5">
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Selected file
+                  </h2>
+                  <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
+                    <div>
+                      <dt className="text-slate-500">Name</dt>
+                      <dd className="mt-1 break-all font-medium text-slate-950">{selectedFile.name}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Size</dt>
+                      <dd className="mt-1 font-medium text-slate-950">{formatBytes(selectedFile.size)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Type</dt>
+                      <dd className="mt-1 font-medium text-slate-950">{selectedFile.type || "unknown"}</dd>
+                    </div>
+                  </dl>
+                </div>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={!selectedFile || isProcessing}
+                className="inline-flex w-full items-center justify-center rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+              >
+                {isProcessing ? "Processing..." : "Process image"}
+              </button>
+            </form>
+
+            {error ? (
+              <div
+                role="alert"
+                className="mt-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="mt-0.5 h-5 w-5 flex-none"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                <p className="text-sm leading-6">{error}</p>
               </div>
             ) : null}
 
-            <button
-              type="submit"
-              disabled={!selectedFile || isProcessing}
-              className="w-full rounded-2xl bg-sky-600 px-5 py-4 text-base font-bold text-white shadow-lg shadow-sky-600/30 transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
-            >
-              {isProcessing ? "Processing..." : "Process Image"}
-            </button>
-          </form>
+            {result && previewDataUrl ? (
+              <div className="mt-8 grid gap-6 rounded-xl border border-slate-200 bg-white p-5 lg:grid-cols-[1fr_280px]">
+                <div>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="text-lg font-semibold text-slate-950">Result</h2>
+                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
+                      Processed in {result.processingTimeMs} ms
+                    </span>
+                  </div>
 
-          {error ? (
-            <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-800">
-              <h2 className="text-lg font-bold">Processing failed</h2>
-              <p className="mt-2 text-sm">{error}</p>
-            </div>
-          ) : null}
+                  <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                    <MetadataPanel title="Original" rows={metadataRows(result.original)} />
+                    <MetadataPanel title="WebP output" rows={metadataRows(result.processed)} />
+                  </div>
 
-          {result && previewDataUrl ? (
-            <div className="mt-8 grid gap-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 lg:grid-cols-[1fr_280px]">
-              <div>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-xl font-bold text-slate-950">Processing result</h2>
-                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-700">
-                    {result.processingTimeMs} ms
-                  </span>
+                  <a
+                    href={previewDataUrl}
+                    download="processed-image.webp"
+                    className="mt-6 inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
+                  >
+                    Download WebP
+                  </a>
                 </div>
 
-                <div className="mt-5 grid gap-5 sm:grid-cols-2">
-                  <MetadataPanel title="Original" rows={metadataRows(result.original)} />
-                  <MetadataPanel title="WebP output" rows={metadataRows(result.processed)} />
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={previewDataUrl}
+                    alt="Processed WebP preview"
+                    className="h-full w-full object-contain"
+                  />
                 </div>
-
-                <a
-                  href={previewDataUrl}
-                  download="processed-image.webp"
-                  className="mt-6 inline-flex rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
-                >
-                  Download WebP
-                </a>
               </div>
+            ) : null}
+          </div>
+        </section>
+      </main>
 
-              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={previewDataUrl} alt="Processed WebP preview" className="h-full w-full object-contain" />
-              </div>
-            </div>
-          ) : null}
+      <footer className="border-t border-slate-200 bg-white">
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-4 text-xs text-slate-500">
+          <span>Asset Processor</span>
+          <span>Images are processed in-memory and never stored.</span>
         </div>
-      </section>
-    </main>
+      </footer>
+    </div>
   );
 }
 
 function MetadataPanel({ title, rows }: { title: string; rows: Array<[string, string]> }) {
   return (
-    <div className="rounded-xl bg-white p-4">
-      <h3 className="font-bold text-slate-950">{title}</h3>
+    <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+      <h3 className="text-sm font-semibold text-slate-950">{title}</h3>
       <dl className="mt-3 space-y-2 text-sm">
         {rows.map(([label, value]) => (
           <div key={label} className="flex justify-between gap-4">
             <dt className="text-slate-500">{label}</dt>
-            <dd className="text-right font-semibold text-slate-900">{value}</dd>
+            <dd className="text-right font-medium text-slate-900">{value}</dd>
           </div>
         ))}
       </dl>
