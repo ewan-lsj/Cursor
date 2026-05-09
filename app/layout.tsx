@@ -14,7 +14,7 @@ const robotoMono = Roboto_Mono({
 
 export const metadata: Metadata = {
   title: "Asset Processor",
-  description: "Resize and convert JPEG, PNG, and WebP images into optimized WebP files.",
+  description: "Resize and convert JPEG, PNG, WebP, and TIFF images into optimized WebP files.",
 };
 
 export default function RootLayout({

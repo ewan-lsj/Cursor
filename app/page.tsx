@@ -53,7 +53,7 @@ function toUserFacingError(message: string | null | undefined): string {
   const lower = message.toLowerCase();
 
   if (lower.includes("unsupported file type") || lower.includes("only jpeg")) {
-    return "That file type isn't supported yet. Please upload a JPEG, PNG, or WebP image.";
+    return fallback;
   }
 
   if (lower.includes("upload an image")) {
@@ -183,8 +183,8 @@ export default function Home() {
               Optimize images for the web
             </h1>
             <p className="mt-3 max-w-2xl text-base text-slate-600">
-              Upload a JPEG, PNG, or WebP and we&apos;ll resize it to a sensible width and re-encode it as
-              WebP, ready to ship.
+              Upload a JPEG, PNG, WebP, or TIFF and we&apos;ll resize it to a sensible width and re-encode it
+              as WebP, ready to ship.
             </p>
           </div>
 
@@ -219,7 +219,7 @@ export default function Home() {
                 <span className="text-base font-semibold text-slate-900">
                   Drag an image here, or click to browse
                 </span>
-                <span className="mt-1.5 text-sm text-slate-500">JPG, PNG, or WebP</span>
+                <span className="mt-1.5 text-sm text-slate-500">JPG, PNG, WebP, or TIFF</span>
                 <input
                   type="file"
                   name="image"
