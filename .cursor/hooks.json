@@ -1,10 +1,8 @@
 {
   "version": 1,
   "hooks": {
-    "afterFileEdit": [
-      {
-        "command": ".cursor/hooks/edit-audit.sh"
-      }
+    "beforeShellExecution": [
+      { "command": ".cursor/hooks/shell-guard.sh" }
     ]
   }
 }
