@@ -1,6 +1,6 @@
 /**
  * MIME types the API can process (Sharp path).
- * Keep in sync with client UX: see ACCEPTED_UPLOAD_TYPES for file-picker-only types.
+ * `ACCEPTED_UPLOAD_TYPES` may include extra picker-only types (e.g. TIFF) that the route rejects by design.
  */
 export const SUPPORTED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 
