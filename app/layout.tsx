@@ -13,8 +13,8 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "asset-processor",
-  description: "Image processing demo with Sharp and Sentry",
+  title: "Asset Processor",
+  description: "Resize and convert JPEG, PNG, and WebP images into optimized WebP files.",
 };
 
 export default function RootLayout({
