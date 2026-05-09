@@ -128,7 +128,7 @@ export default function Home() {
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">Sentry demo</p>
             <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-950">Asset Processor</h1>
             <p className="mt-3 text-base text-slate-600">
-              Upload a JPEG, PNG, or WebP to resize and convert it. Upload TIFF or HEIC to trigger the
+              Upload a JPEG, PNG, WebP, or TIFF to resize and convert it. Upload HEIC to trigger the
               intentional Sentry exception path.
             </p>
           </div>
@@ -146,7 +146,7 @@ export default function Home() {
               onDrop={handleDrop}
             >
               <span className="text-lg font-semibold text-slate-900">Drop an image here or click to browse</span>
-              <span className="mt-2 text-sm">Visually accepts JPG, PNG, WebP, TIFF, and HEIC</span>
+              <span className="mt-2 text-sm">Accepts JPG, PNG, WebP, and TIFF for processing; HEIC is accepted but unsupported</span>
               <input
                 type="file"
                 name="image"
