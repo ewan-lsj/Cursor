@@ -2,7 +2,13 @@ import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 
-import { SUPPORTED_MIME_TYPES, type SupportedMimeType } from "@/lib/image-formats";
+import {
+  MAX_UPLOAD_SIZE_BYTES,
+  SUPPORTED_MIME_TYPES,
+  type SupportedMimeType,
+} from "@/lib/image-formats";
+
+const MAX_UPLOAD_SIZE_MB = MAX_UPLOAD_SIZE_BYTES / (1024 * 1024);
 
 type SharpMetadata = {
   width?: number;
@@ -81,6 +87,13 @@ export async function POST(request: Request) {
     mimetype: image.type,
     size: image.size,
   });
+
+  if (image.size > MAX_UPLOAD_SIZE_BYTES) {
+    return NextResponse.json(
+      { message: `Image is too large. Maximum upload size is ${MAX_UPLOAD_SIZE_MB} MB.` },
+      { status: 413 },
+    );
+  }
 
   assertSupportedMimeType(image.type);
 

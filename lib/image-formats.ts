@@ -21,3 +21,9 @@ export const ACCEPTED_UPLOAD_TYPES = [
   ".heic",
   ".heif",
 ] as const;
+
+/**
+ * Maximum accepted upload size in bytes (8 MiB).
+ * Enforced server-side in the /api/process route and mirrored client-side for UX.
+ */
+export const MAX_UPLOAD_SIZE_BYTES = 8 * 1024 * 1024;

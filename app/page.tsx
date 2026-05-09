@@ -2,7 +2,7 @@
 
 import { ChangeEvent, DragEvent, FormEvent, useMemo, useState } from "react";
 
-import { ACCEPTED_UPLOAD_TYPES } from "@/lib/image-formats";
+import { ACCEPTED_UPLOAD_TYPES, MAX_UPLOAD_SIZE_BYTES } from "@/lib/image-formats";
 
 type ImageMetadata = {
   width: number | null;
@@ -58,6 +58,13 @@ export default function Home() {
 
   function handleFile(file: File | undefined): void {
     if (!file) {
+      return;
+    }
+
+    if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+      setSelectedFile(null);
+      setResult(null);
+      setError(`Image is too large. Maximum upload size is ${formatBytes(MAX_UPLOAD_SIZE_BYTES)}.`);
       return;
     }
 

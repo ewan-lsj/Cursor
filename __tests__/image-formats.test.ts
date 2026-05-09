@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { ACCEPTED_UPLOAD_TYPES, SUPPORTED_MIME_TYPES } from "../lib/image-formats";
+import {
+  ACCEPTED_UPLOAD_TYPES,
+  MAX_UPLOAD_SIZE_BYTES,
+  SUPPORTED_MIME_TYPES,
+} from "../lib/image-formats";
 
 describe("SUPPORTED_MIME_TYPES", () => {
   it("contains exactly JPEG, PNG, and WebP MIME types", () => {
@@ -30,5 +34,16 @@ describe("ACCEPTED_UPLOAD_TYPES", () => {
     for (const mime of SUPPORTED_MIME_TYPES) {
       expect(ACCEPTED_UPLOAD_TYPES).toContain(mime);
     }
+  });
+});
+
+describe("MAX_UPLOAD_SIZE_BYTES", () => {
+  it("equals 8 MiB expressed in bytes", () => {
+    expect(MAX_UPLOAD_SIZE_BYTES).toBe(8 * 1024 * 1024);
+  });
+
+  it("is a positive integer", () => {
+    expect(Number.isInteger(MAX_UPLOAD_SIZE_BYTES)).toBe(true);
+    expect(MAX_UPLOAD_SIZE_BYTES).toBeGreaterThan(0);
   });
 });
