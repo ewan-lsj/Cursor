@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { ACCEPTED_UPLOAD_TYPES, SUPPORTED_MIME_TYPES } from "../lib/image-formats";
+import {
+  ACCEPTED_UPLOAD_TYPES,
+  isUploadOverMaxBytes,
+  MAX_UPLOAD_BYTES,
+  SUPPORTED_MIME_TYPES,
+  uploadFileTooLargeUserMessage,
+} from "../lib/image-formats";
 
 describe("SUPPORTED_MIME_TYPES", () => {
   it("contains exactly JPEG, PNG, and WebP MIME types", () => {
@@ -30,5 +36,22 @@ describe("ACCEPTED_UPLOAD_TYPES", () => {
     for (const mime of SUPPORTED_MIME_TYPES) {
       expect(ACCEPTED_UPLOAD_TYPES).toContain(mime);
     }
+  });
+});
+
+describe("upload size limit", () => {
+  it("uses an 8 MiB cap shared by API and UI", () => {
+    expect(MAX_UPLOAD_BYTES).toBe(8 * 1024 * 1024);
+  });
+
+  it("reports oversize with a stable user-facing sentence", () => {
+    expect(uploadFileTooLargeUserMessage()).toBe(
+      "That file is larger than 8 MB. Choose a smaller image to continue."
+    );
+  });
+
+  it("flags sizes strictly above the cap", () => {
+    expect(isUploadOverMaxBytes(MAX_UPLOAD_BYTES)).toBe(false);
+    expect(isUploadOverMaxBytes(MAX_UPLOAD_BYTES + 1)).toBe(true);
   });
 });

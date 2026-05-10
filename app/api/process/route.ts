@@ -2,7 +2,12 @@ import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 
-import { SUPPORTED_MIME_TYPES, type SupportedMimeType } from "@/lib/image-formats";
+import {
+  isUploadOverMaxBytes,
+  SUPPORTED_MIME_TYPES,
+  type SupportedMimeType,
+  uploadFileTooLargeUserMessage,
+} from "@/lib/image-formats";
 
 type SharpMetadata = {
   width?: number;
@@ -76,6 +81,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Upload an image file in the image field." }, { status: 400 });
   }
 
+  if (isUploadOverMaxBytes(image.size)) {
+    return NextResponse.json({ message: uploadFileTooLargeUserMessage() }, { status: 413 });
+  }
+
+  // Allowed Sentry context: filename, mimetype, size in bytes only (see no-sensitive-sentry-context).
   Sentry.setContext("upload", {
     filename: image.name,
     mimetype: image.type,

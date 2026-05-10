@@ -2,7 +2,12 @@
 
 import { ChangeEvent, DragEvent, FormEvent, useMemo, useState } from "react";
 
-import { ACCEPTED_UPLOAD_TYPES } from "@/lib/image-formats";
+import {
+  ACCEPTED_UPLOAD_TYPES,
+  isUploadOverMaxBytes,
+  MAX_UPLOAD_BYTES,
+  uploadFileTooLargeUserMessage,
+} from "@/lib/image-formats";
 
 type ImageMetadata = {
   width: number | null;
@@ -64,6 +69,11 @@ function toUserFacingError(message: string | null | undefined): string {
     return "We couldn't reach the server. Check your connection and try again.";
   }
 
+  const tooLarge = uploadFileTooLargeUserMessage();
+  if (message === tooLarge) {
+    return tooLarge;
+  }
+
   return fallback;
 }
 
@@ -110,6 +120,11 @@ export default function Home() {
       return;
     }
 
+    if (isUploadOverMaxBytes(selectedFile.size)) {
+      setError(uploadFileTooLargeUserMessage());
+      return;
+    }
+
     const formData = new FormData();
     formData.append("image", selectedFile);
 
@@ -126,13 +141,17 @@ export default function Home() {
       const payload = (await response.json().catch(() => null)) as unknown;
 
       if (!response.ok) {
-        const rawMessage =
+        let rawMessage =
           typeof payload === "object" &&
           payload !== null &&
           "message" in payload &&
           typeof payload.message === "string"
             ? payload.message
             : null;
+
+        if (rawMessage === null && response.status === 413) {
+          rawMessage = uploadFileTooLargeUserMessage();
+        }
 
         setError(toUserFacingError(rawMessage));
         return;
@@ -219,7 +238,9 @@ export default function Home() {
                 <span className="text-base font-semibold text-slate-900">
                   Drag an image here, or click to browse
                 </span>
-                <span className="mt-1.5 text-sm text-slate-500">JPG, PNG, WebP, or TIFF</span>
+                <span className="mt-1.5 text-sm text-slate-500">
+                  JPG, PNG, WebP, or TIFF — max {formatBytes(MAX_UPLOAD_BYTES)} per file
+                </span>
                 <input
                   type="file"
                   name="image"
@@ -248,12 +269,17 @@ export default function Home() {
                       <dd className="mt-1 font-medium text-slate-950">{selectedFile.type || "unknown"}</dd>
                     </div>
                   </dl>
+                  {isUploadOverMaxBytes(selectedFile.size) ? (
+                    <p className="mt-3 text-sm font-medium text-amber-800" role="status">
+                      {uploadFileTooLargeUserMessage()}
+                    </p>
+                  ) : null}
                 </div>
               ) : null}
 
               <button
                 type="submit"
-                disabled={!selectedFile || isProcessing}
+                disabled={!selectedFile || isProcessing || isUploadOverMaxBytes(selectedFile.size)}
                 className="inline-flex w-full items-center justify-center rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
               >
                 {isProcessing ? "Processing..." : "Process image"}
