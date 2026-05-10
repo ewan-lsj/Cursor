@@ -10,4 +10,8 @@ alwaysApply: true
 - Do not introduce auth, persistence, queues, background jobs, or external services without an explicit product need.
 - Keep secrets, tokens, DSNs, and customer data out of code, logs, tests, and examples.
 - For non-trivial behavior changes, verify the code path with targeted tests or a manual run and report the exact evidence.
-- If a hook blocks an action, do not use workarounds or alternatives; state what the hook did (for example denied a command and the reason it gave).
+- If a hook blocks an action, that decision applies to the **intent**, not only the exact command line. Do not circumvent it.
+  - Forbidden: any substitute or wrapper that achieves the same blocked outcome (different binaries or flags, `bash -c` / subshells, here-docs, xargs, find -exec, language one-liners, Makefile/npm/yarn/pnpm scripts, or containers) when the purpose is unchanged.
+  - Forbidden: elevation or privilege substitutes when `sudo` (or similar) was blocked — including `doas`, `pkexec`, `runuser`, `su` to root, or dbus/session helpers used for the same effect.
+  - Forbidden: asking the user or another process to run the blocked command for you when it is only to bypass the hook for the same operation you were denied.
+  - Required: say exactly what the hook denied and the reason given in the transcript; do not proceed with an equivalent path unless the user explicitly directs a **different**, legitimately lower-risk approach.

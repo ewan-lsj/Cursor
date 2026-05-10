@@ -116,6 +116,12 @@ RULES=(
 
   # Anything elevated with sudo — too blunt for an autonomous agent.
   '(^|[^a-z])sudo([[:space:]]|$)|||sudo elevation requested'
+
+  # Same intent as sudo: common elevation substitutes agents use when sudo is blocked.
+  '(^|[^a-z])(doas|pkexec|runuser)([[:space:]]|$)|||privilege elevation via doas, pkexec, or runuser'
+
+  # Switch to root shell (same class as elevation).
+  '(^|[^a-z])su[[:space:]]+(-[[:space:]]*|[[:space:]]+(-|--login)[[:space:]]*)(root|0)([[:space:]]|$)|||su to root'
 )
 
 for rule in "${RULES[@]}"; do
