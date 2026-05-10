@@ -81,11 +81,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: UPLOAD_FILE_TOO_LARGE_MESSAGE }, { status: 413 });
   }
 
-  // Allowed fields only: filename, mimetype, size (see no-sensitive-sentry-context).
+  // Allowed fields only: filename, mimetype, size, processing stage (see no-sensitive-sentry-context).
   Sentry.setContext("upload", {
     filename: image.name,
     mimetype: image.type,
     size: image.size,
+    stage: "received",
   });
 
   assertSupportedMimeType(image.type);
