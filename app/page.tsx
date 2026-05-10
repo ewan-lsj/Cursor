@@ -2,7 +2,11 @@
 
 import { ChangeEvent, DragEvent, FormEvent, useMemo, useState } from "react";
 
-import { ACCEPTED_UPLOAD_TYPES } from "@/lib/image-formats";
+import {
+  ACCEPTED_UPLOAD_TYPES,
+  MAX_UPLOAD_BYTES,
+  UPLOAD_FILE_TOO_LARGE_MESSAGE,
+} from "@/lib/image-formats";
 
 type ImageMetadata = {
   width: number | null;
@@ -50,6 +54,10 @@ function toUserFacingError(message: string | null | undefined): string {
     return fallback;
   }
 
+  if (message === UPLOAD_FILE_TOO_LARGE_MESSAGE) {
+    return UPLOAD_FILE_TOO_LARGE_MESSAGE;
+  }
+
   const lower = message.toLowerCase();
 
   if (lower.includes("unsupported file type") || lower.includes("only jpeg")) {
@@ -82,6 +90,11 @@ export default function Home() {
     return `data:image/webp;base64,${result.processed.base64}`;
   }, [result]);
 
+  const fileTooLarge = useMemo(
+    () => selectedFile !== null && selectedFile.size > MAX_UPLOAD_BYTES,
+    [selectedFile],
+  );
+
   function handleFile(file: File | undefined): void {
     if (!file) {
       return;
@@ -107,6 +120,11 @@ export default function Home() {
 
     if (!selectedFile) {
       setError(toUserFacingError("upload an image"));
+      return;
+    }
+
+    if (selectedFile.size > MAX_UPLOAD_BYTES) {
+      setError(UPLOAD_FILE_TOO_LARGE_MESSAGE);
       return;
     }
 
@@ -219,7 +237,9 @@ export default function Home() {
                 <span className="text-base font-semibold text-slate-900">
                   Drag an image here, or click to browse
                 </span>
-                <span className="mt-1.5 text-sm text-slate-500">JPG, PNG, WebP, or TIFF</span>
+                <span className="mt-1.5 text-sm text-slate-500">
+                  JPG, PNG, WebP, or TIFF · max {formatBytes(MAX_UPLOAD_BYTES)}
+                </span>
                 <input
                   type="file"
                   name="image"
@@ -248,12 +268,20 @@ export default function Home() {
                       <dd className="mt-1 font-medium text-slate-950">{selectedFile.type || "unknown"}</dd>
                     </div>
                   </dl>
+                  {fileTooLarge ? (
+                    <div
+                      role="status"
+                      className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+                    >
+                      {UPLOAD_FILE_TOO_LARGE_MESSAGE}
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
 
               <button
                 type="submit"
-                disabled={!selectedFile || isProcessing}
+                disabled={!selectedFile || isProcessing || fileTooLarge}
                 className="inline-flex w-full items-center justify-center rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
               >
                 {isProcessing ? "Processing..." : "Process image"}
