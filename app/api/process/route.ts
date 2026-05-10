@@ -42,7 +42,7 @@ type ProcessResponse = {
 function assertSupportedMimeType(mimetype: string): asserts mimetype is SupportedMimeType {
   if (!SUPPORTED_MIME_TYPES.includes(mimetype as SupportedMimeType)) {
     throw new Error(
-      `Unsupported file type: ${mimetype}. Only JPEG, PNG, and WebP are supported.`,
+      `Unsupported file type: ${mimetype}. Only JPEG, PNG, WebP, and TIFF are supported.`,
     );
   }
 }

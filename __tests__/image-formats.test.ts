@@ -3,17 +3,17 @@ import { describe, expect, it } from "vitest";
 import { ACCEPTED_UPLOAD_TYPES, SUPPORTED_MIME_TYPES } from "../lib/image-formats";
 
 describe("SUPPORTED_MIME_TYPES", () => {
-  it("contains exactly JPEG, PNG, and WebP MIME types", () => {
-    expect(SUPPORTED_MIME_TYPES).toHaveLength(3);
+  it("contains exactly JPEG, PNG, WebP, and TIFF MIME types", () => {
+    expect(SUPPORTED_MIME_TYPES).toHaveLength(4);
     expect(new Set(SUPPORTED_MIME_TYPES)).toEqual(
-      new Set(["image/jpeg", "image/png", "image/webp"] as const)
+      new Set(["image/jpeg", "image/png", "image/webp", "image/tiff"] as const)
     );
   });
 });
 
 describe("ACCEPTED_UPLOAD_TYPES", () => {
   it("includes MIME types accepted in the file input but not processed by the API", () => {
-    for (const mime of ["image/tiff", "image/heic", "image/heif"] as const) {
+    for (const mime of ["image/heic", "image/heif"] as const) {
       expect(ACCEPTED_UPLOAD_TYPES).toContain(mime);
       expect(SUPPORTED_MIME_TYPES).not.toContain(mime);
     }
