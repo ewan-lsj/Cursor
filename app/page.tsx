@@ -3,6 +3,7 @@
 import { ChangeEvent, DragEvent, FormEvent, useMemo, useState } from "react";
 
 import { ACCEPTED_UPLOAD_TYPES } from "@/lib/image-formats";
+import { MAX_UPLOAD_BYTES, UPLOAD_FILE_TOO_LARGE_MESSAGE } from "@/lib/upload-limit";
 
 type ImageMetadata = {
   width: number | null;
@@ -60,6 +61,10 @@ function toUserFacingError(message: string | null | undefined): string {
     return "Please choose an image to upload.";
   }
 
+  if (message === UPLOAD_FILE_TOO_LARGE_MESSAGE) {
+    return UPLOAD_FILE_TOO_LARGE_MESSAGE;
+  }
+
   if (lower.includes("network") || lower.includes("failed to fetch")) {
     return "We couldn't reach the server. Check your connection and try again.";
   }
@@ -89,7 +94,7 @@ export default function Home() {
 
     setSelectedFile(file);
     setResult(null);
-    setError(null);
+    setError(file.size > MAX_UPLOAD_BYTES ? UPLOAD_FILE_TOO_LARGE_MESSAGE : null);
   }
 
   function handleDrop(event: DragEvent<HTMLLabelElement>): void {
@@ -107,6 +112,11 @@ export default function Home() {
 
     if (!selectedFile) {
       setError(toUserFacingError("upload an image"));
+      return;
+    }
+
+    if (selectedFile.size > MAX_UPLOAD_BYTES) {
+      setError(UPLOAD_FILE_TOO_LARGE_MESSAGE);
       return;
     }
 
@@ -219,7 +229,9 @@ export default function Home() {
                 <span className="text-base font-semibold text-slate-900">
                   Drag an image here, or click to browse
                 </span>
-                <span className="mt-1.5 text-sm text-slate-500">JPG, PNG, WebP, or TIFF</span>
+                <span className="mt-1.5 text-sm text-slate-500">
+                  JPG, PNG, WebP, or TIFF · max {formatBytes(MAX_UPLOAD_BYTES)}
+                </span>
                 <input
                   type="file"
                   name="image"
@@ -230,10 +242,22 @@ export default function Home() {
               </label>
 
               {selectedFile ? (
-                <div className="rounded-xl border border-slate-200 bg-white p-5">
+                <div
+                  className={`rounded-xl border bg-white p-5 ${
+                    selectedFile.size > MAX_UPLOAD_BYTES
+                      ? "border-amber-300 bg-amber-50/40"
+                      : "border-slate-200"
+                  }`}
+                >
                   <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Selected file
                   </h2>
+                  {selectedFile.size > MAX_UPLOAD_BYTES ? (
+                    <p className="mt-2 text-sm font-medium text-amber-900" role="status">
+                      This file exceeds the {formatBytes(MAX_UPLOAD_BYTES)} limit. Choose a smaller image to
+                      continue.
+                    </p>
+                  ) : null}
                   <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
                     <div>
                       <dt className="text-slate-500">Name</dt>
@@ -253,7 +277,9 @@ export default function Home() {
 
               <button
                 type="submit"
-                disabled={!selectedFile || isProcessing}
+                disabled={
+                  !selectedFile || isProcessing || (selectedFile?.size ?? 0) > MAX_UPLOAD_BYTES
+                }
                 className="inline-flex w-full items-center justify-center rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
               >
                 {isProcessing ? "Processing..." : "Process image"}
