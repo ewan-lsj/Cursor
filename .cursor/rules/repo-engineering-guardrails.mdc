@@ -10,3 +10,4 @@ alwaysApply: true
 - Do not introduce auth, persistence, queues, background jobs, or external services without an explicit product need.
 - Keep secrets, tokens, DSNs, and customer data out of code, logs, tests, and examples.
 - For non-trivial behavior changes, verify the code path with targeted tests or a manual run and report the exact evidence.
+- If a hook blocks an action, do not use workarounds or alternatives; state what the hook did (for example denied a command and the reason it gave).
