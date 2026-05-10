@@ -10,4 +10,5 @@ alwaysApply: true
 - Do not introduce auth, persistence, queues, background jobs, or external services without an explicit product need.
 - Keep secrets, tokens, DSNs, and customer data out of code, logs, tests, and examples.
 - For non-trivial behavior changes, verify the code path with targeted tests or a manual run and report the exact evidence.
-- Do not work around hooks or other guards that block actions (for example `--no-verify`, skipping checks, or disabling linters). Fix the underlying issue or get an explicit exception instead.
+- **Hooks must run:** This repo may configure hooks (for example Cursor `beforeShellExecution` in `.cursor/hooks.json` and scripts under `.cursor/hooks/`, plus any git or CI hooks). Do not disable, remove, or rewire them to skip evaluation.
+- **When a hook blocks:** If any hook denies, fails, or blocks an action—including when the user explicitly asked for it (for example a shell command the hook rejects)—do not work around that outcome with alternate commands, tools, indirect steps, or bypass flags (for example `--no-verify`, skipping checks, or disabling linters). Use an approach the hook allows, fix what the guard is protecting, or ask the user to change the hook configuration or run the step outside the agent.
