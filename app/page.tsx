@@ -2,7 +2,11 @@
 
 import { ChangeEvent, DragEvent, FormEvent, useMemo, useState } from "react";
 
-import { ACCEPTED_UPLOAD_TYPES } from "@/lib/image-formats";
+import {
+  ACCEPTED_UPLOAD_TYPES,
+  MAX_UPLOAD_BYTES,
+  UPLOAD_FILE_TOO_LARGE_MESSAGE,
+} from "@/lib/image-formats";
 
 type ImageMetadata = {
   width: number | null;
@@ -50,6 +54,10 @@ function toUserFacingError(message: string | null | undefined): string {
     return fallback;
   }
 
+  if (message === UPLOAD_FILE_TOO_LARGE_MESSAGE) {
+    return message;
+  }
+
   const lower = message.toLowerCase();
 
   if (lower.includes("unsupported file type") || lower.includes("only jpeg")) {
@@ -73,6 +81,8 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<ProcessResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const fileExceedsLimit = selectedFile !== null && selectedFile.size > MAX_UPLOAD_BYTES;
 
   const previewDataUrl = useMemo(() => {
     if (!result) {
@@ -107,6 +117,11 @@ export default function Home() {
 
     if (!selectedFile) {
       setError(toUserFacingError("upload an image"));
+      return;
+    }
+
+    if (selectedFile.size > MAX_UPLOAD_BYTES) {
+      setError(UPLOAD_FILE_TOO_LARGE_MESSAGE);
       return;
     }
 
@@ -220,6 +235,9 @@ export default function Home() {
                   Drag an image here, or click to browse
                 </span>
                 <span className="mt-1.5 text-sm text-slate-500">JPG, PNG, WebP, or TIFF</span>
+                <span className="mt-1 text-xs text-slate-400">
+                  Maximum file size {formatBytes(MAX_UPLOAD_BYTES)}
+                </span>
                 <input
                   type="file"
                   name="image"
@@ -234,6 +252,14 @@ export default function Home() {
                   <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Selected file
                   </h2>
+                  {fileExceedsLimit ? (
+                    <p
+                      className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+                      role="status"
+                    >
+                      {UPLOAD_FILE_TOO_LARGE_MESSAGE} Processing is disabled until you pick a smaller file.
+                    </p>
+                  ) : null}
                   <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
                     <div>
                       <dt className="text-slate-500">Name</dt>
@@ -253,7 +279,7 @@ export default function Home() {
 
               <button
                 type="submit"
-                disabled={!selectedFile || isProcessing}
+                disabled={!selectedFile || isProcessing || fileExceedsLimit}
                 className="inline-flex w-full items-center justify-center rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
               >
                 {isProcessing ? "Processing..." : "Process image"}

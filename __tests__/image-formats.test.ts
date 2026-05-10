@@ -1,6 +1,21 @@
 import { describe, expect, it } from "vitest";
 
-import { ACCEPTED_UPLOAD_TYPES, SUPPORTED_MIME_TYPES } from "../lib/image-formats";
+import {
+  ACCEPTED_UPLOAD_TYPES,
+  MAX_UPLOAD_BYTES,
+  SUPPORTED_MIME_TYPES,
+  UPLOAD_FILE_TOO_LARGE_MESSAGE,
+} from "../lib/image-formats";
+
+describe("upload limits", () => {
+  it("sets an 8 MB maximum upload size", () => {
+    expect(MAX_UPLOAD_BYTES).toBe(8 * 1024 * 1024);
+  });
+
+  it("exposes a stable oversize message for API and UI", () => {
+    expect(UPLOAD_FILE_TOO_LARGE_MESSAGE).toContain("8 MB");
+  });
+});
 
 describe("SUPPORTED_MIME_TYPES", () => {
   it("contains exactly JPEG, PNG, and WebP MIME types", () => {

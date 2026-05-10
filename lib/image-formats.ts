@@ -1,3 +1,13 @@
+/** Maximum size for a single uploaded image (8 MB). */
+export const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+
+/**
+ * Shared copy for oversize uploads (API 413 and client banner).
+ * Keep in sync everywhere; do not throw for this case — return structured JSON.
+ */
+export const UPLOAD_FILE_TOO_LARGE_MESSAGE =
+  "This file is over the 8 MB limit. Choose a smaller image.";
+
 /**
  * MIME types the API can process (Sharp path).
  * `ACCEPTED_UPLOAD_TYPES` may include extra picker-only types (e.g. TIFF) that the route rejects by design.
