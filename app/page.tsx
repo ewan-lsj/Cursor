@@ -1,349 +1,214 @@
 "use client";
 
-import { ChangeEvent, DragEvent, FormEvent, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Nav } from "@/components/nav";
+import { createClient } from "@/lib/supabase";
+import type { LearningItem, CrmCompany } from "@/lib/types";
+import { STAGE_CONFIG, STAGES_ORDER } from "@/lib/types";
 
-import { ACCEPTED_UPLOAD_TYPES } from "@/lib/image-formats";
+export default function Dashboard() {
+  const [items, setItems] = useState<LearningItem[]>([]);
+  const [companies, setCompanies] = useState<CrmCompany[]>([]);
+  const [loading, setLoading] = useState(true);
 
-type ImageMetadata = {
-  width: number | null;
-  height: number | null;
-  format: string | null;
-  size: number;
-  mimetype: string;
-};
-
-type ProcessResponse = {
-  original: ImageMetadata;
-  processed: ImageMetadata & {
-    base64: string;
-  };
-  processingTimeMs: number;
-};
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) {
-    return "0 B";
-  }
-
-  const units = ["B", "KB", "MB", "GB"];
-  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
-  const value = bytes / 1024 ** exponent;
-
-  return `${value.toFixed(value >= 10 || exponent === 0 ? 0 : 1)} ${units[exponent]}`;
-}
-
-function metadataRows(metadata: ImageMetadata): Array<[string, string]> {
-  return [
-    ["Format", metadata.format ?? "unknown"],
-    ["Dimensions", metadata.width && metadata.height ? `${metadata.width} x ${metadata.height}` : "unknown"],
-    ["MIME type", metadata.mimetype],
-    ["Size", formatBytes(metadata.size)],
-  ];
-}
-
-// Map raw API/exception strings to a short, user-actionable message so the
-// banner never leaks internal copy or stack-trace text to the end user.
-function toUserFacingError(message: string | null | undefined): string {
-  const fallback = "We couldn't process that image. Please try a different file.";
-
-  if (!message) {
-    return fallback;
-  }
-
-  const lower = message.toLowerCase();
-
-  if (lower.includes("unsupported file type") || lower.includes("only jpeg")) {
-    return fallback;
-  }
-
-  if (lower.includes("upload an image")) {
-    return "Please choose an image to upload.";
-  }
-
-  if (lower.includes("network") || lower.includes("failed to fetch")) {
-    return "We couldn't reach the server. Check your connection and try again.";
-  }
-
-  return fallback;
-}
-
-export default function Home() {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [result, setResult] = useState<ProcessResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const previewDataUrl = useMemo(() => {
-    if (!result) {
-      return null;
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
+      const [itemsRes, companiesRes] = await Promise.all([
+        supabase.from("learning_items").select("*"),
+        supabase.from("crm_companies").select("*"),
+      ]);
+      setItems(itemsRes.data ?? []);
+      setCompanies(companiesRes.data ?? []);
+      setLoading(false);
     }
+    load();
+  }, []);
 
-    return `data:image/webp;base64,${result.processed.base64}`;
-  }, [result]);
+  const totalItems = items.length;
+  const completedItems = items.filter((i) => i.completed).length;
+  const progressPct = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+  const totalCompanies = companies.length;
 
-  function handleFile(file: File | undefined): void {
-    if (!file) {
-      return;
-    }
+  const stageCounts = STAGES_ORDER.reduce<Record<string, number>>((acc, stage) => {
+    acc[stage] = companies.filter((c) => c.stage === stage).length;
+    return acc;
+  }, {});
 
-    setSelectedFile(file);
-    setResult(null);
-    setError(null);
-  }
-
-  function handleDrop(event: DragEvent<HTMLLabelElement>): void {
-    event.preventDefault();
-    setIsDragging(false);
-    handleFile(event.dataTransfer.files.item(0) ?? undefined);
-  }
-
-  function handleInputChange(event: ChangeEvent<HTMLInputElement>): void {
-    handleFile(event.target.files?.item(0) ?? undefined);
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
-
-    if (!selectedFile) {
-      setError(toUserFacingError("upload an image"));
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("image", selectedFile);
-
-    setIsProcessing(true);
-    setError(null);
-    setResult(null);
-
-    try {
-      const response = await fetch("/api/process", {
-        method: "POST",
-        body: formData,
-      });
-
-      const payload = (await response.json().catch(() => null)) as unknown;
-
-      if (!response.ok) {
-        const rawMessage =
-          typeof payload === "object" &&
-          payload !== null &&
-          "message" in payload &&
-          typeof payload.message === "string"
-            ? payload.message
-            : null;
-
-        setError(toUserFacingError(rawMessage));
-        return;
-      }
-
-      setResult(payload as ProcessResponse);
-    } catch (requestError) {
-      setError(toUserFacingError(requestError instanceof Error ? requestError.message : null));
-    } finally {
-      setIsProcessing(false);
-    }
-  }
+  const recentActivities = companies
+    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+    .slice(0, 5);
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-4">
-          <a href="/" className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-950 text-white">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <path d="m21 15-5-5L5 21" />
-              </svg>
-            </span>
-            <span className="text-base font-semibold tracking-tight text-slate-950">Asset Processor</span>
-          </a>
-          <span className="hidden text-xs font-medium text-slate-500 sm:inline">
-            Resize and convert to optimized WebP
-          </span>
-        </div>
-      </header>
+    <div className="flex min-h-screen flex-col bg-slate-50">
+      <Nav />
+      <main className="flex-1 px-4 sm:px-6 py-8">
+        <div className="mx-auto max-w-7xl">
+          <h1 className="text-2xl font-bold text-slate-950 sm:text-3xl">
+            Dashboard
+          </h1>
+          <p className="mt-1 text-slate-600">
+            Your sales learning journey and job search at a glance.
+          </p>
 
-      <main className="flex-1 px-6 py-12">
-        <section className="mx-auto w-full max-w-3xl">
-          <div className="mb-8">
-            <h1 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-              Optimize images for the web
-            </h1>
-            <p className="mt-3 max-w-2xl text-base text-slate-600">
-              Upload a JPEG, PNG, WebP, or TIFF and we&apos;ll resize it to a sensible width and re-encode it
-              as WebP, ready to ship.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              <label
-                className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-12 text-center transition ${
-                  isDragging
-                    ? "border-slate-900 bg-slate-50 text-slate-900"
-                    : "border-slate-300 bg-slate-50/60 text-slate-600 hover:border-slate-400 hover:bg-slate-50"
-                }`}
-                onDragEnter={() => setIsDragging(true)}
-                onDragLeave={() => setIsDragging(false)}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={handleDrop}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.75}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="mb-3 h-9 w-9 text-slate-400"
-                  aria-hidden="true"
-                >
-                  <path d="M12 16V4" />
-                  <path d="m6 10 6-6 6 6" />
-                  <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
-                </svg>
-                <span className="text-base font-semibold text-slate-900">
-                  Drag an image here, or click to browse
-                </span>
-                <span className="mt-1.5 text-sm text-slate-500">JPG, PNG, WebP, or TIFF</span>
-                <input
-                  type="file"
-                  name="image"
-                  accept={ACCEPTED_UPLOAD_TYPES.join(",")}
-                  className="sr-only"
-                  onChange={handleInputChange}
+          {loading ? (
+            <div className="mt-12 flex items-center justify-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+            </div>
+          ) : (
+            <>
+              <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <StatCard
+                  label="Learning Progress"
+                  value={`${progressPct}%`}
+                  sub={`${completedItems} / ${totalItems} items`}
+                  color="indigo"
                 />
-              </label>
+                <StatCard
+                  label="Companies Tracked"
+                  value={String(totalCompanies)}
+                  sub="in your pipeline"
+                  color="violet"
+                />
+                <StatCard
+                  label="In Interview"
+                  value={String(stageCounts.interview || 0)}
+                  sub="active interviews"
+                  color="purple"
+                />
+                <StatCard
+                  label="Offers"
+                  value={String(stageCounts.offer || 0)}
+                  sub="received"
+                  color="emerald"
+                />
+              </div>
 
-              {selectedFile ? (
-                <div className="rounded-xl border border-slate-200 bg-white p-5">
-                  <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Selected file
+              <div className="mt-8 grid gap-6 lg:grid-cols-2">
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold text-slate-950">
+                      Learning Progress
+                    </h2>
+                    <Link
+                      href="/learn"
+                      className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                    >
+                      Continue learning &rarr;
+                    </Link>
+                  </div>
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-600">
+                        {completedItems} of {totalItems} completed
+                      </span>
+                      <span className="font-semibold text-indigo-700">
+                        {progressPct}%
+                      </span>
+                    </div>
+                    <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-500"
+                        style={{ width: `${progressPct}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold text-slate-950">
+                      Pipeline Overview
+                    </h2>
+                    <Link
+                      href="/crm"
+                      className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                    >
+                      Open CRM &rarr;
+                    </Link>
+                  </div>
+                  <div className="mt-4 grid grid-cols-3 gap-3">
+                    {STAGES_ORDER.map((stage) => {
+                      const cfg = STAGE_CONFIG[stage];
+                      return (
+                        <div
+                          key={stage}
+                          className={`rounded-lg ${cfg.bgColor} p-3 text-center`}
+                        >
+                          <span className={`text-xl font-bold ${cfg.color}`}>
+                            {stageCounts[stage] || 0}
+                          </span>
+                          <p className={`mt-0.5 text-xs font-medium ${cfg.color}`}>
+                            {cfg.label}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {recentActivities.length > 0 && (
+                <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <h2 className="text-lg font-semibold text-slate-950">
+                    Recently Updated Companies
                   </h2>
-                  <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
-                    <div>
-                      <dt className="text-slate-500">Name</dt>
-                      <dd className="mt-1 break-all font-medium text-slate-950">{selectedFile.name}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-slate-500">Size</dt>
-                      <dd className="mt-1 font-medium text-slate-950">{formatBytes(selectedFile.size)}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-slate-500">Type</dt>
-                      <dd className="mt-1 font-medium text-slate-950">{selectedFile.type || "unknown"}</dd>
-                    </div>
-                  </dl>
-                </div>
-              ) : null}
-
-              <button
-                type="submit"
-                disabled={!selectedFile || isProcessing}
-                className="inline-flex w-full items-center justify-center rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
-              >
-                {isProcessing ? "Processing..." : "Process image"}
-              </button>
-            </form>
-
-            {error ? (
-              <div
-                role="alert"
-                className="mt-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="mt-0.5 h-5 w-5 flex-none"
-                  aria-hidden="true"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-                <p className="text-sm leading-6">{error}</p>
-              </div>
-            ) : null}
-
-            {result && previewDataUrl ? (
-              <div className="mt-8 grid gap-6 rounded-xl border border-slate-200 bg-white p-5 lg:grid-cols-[1fr_280px]">
-                <div>
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h2 className="text-lg font-semibold text-slate-950">Result</h2>
-                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
-                      Processed in {result.processingTimeMs} ms
-                    </span>
+                  <div className="mt-4 divide-y divide-slate-100">
+                    {recentActivities.map((c) => (
+                      <Link
+                        key={c.id}
+                        href={`/crm/${c.id}`}
+                        className="flex items-center justify-between py-3 hover:bg-slate-50 -mx-3 px-3 rounded-lg transition"
+                      >
+                        <div>
+                          <p className="font-medium text-slate-950">{c.name}</p>
+                          <p className="text-sm text-slate-500">{c.website}</p>
+                        </div>
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STAGE_CONFIG[c.stage].bgColor} ${STAGE_CONFIG[c.stage].color}`}
+                        >
+                          {STAGE_CONFIG[c.stage].label}
+                        </span>
+                      </Link>
+                    ))}
                   </div>
-
-                  <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                    <MetadataPanel title="Original" rows={metadataRows(result.original)} />
-                    <MetadataPanel title="WebP output" rows={metadataRows(result.processed)} />
-                  </div>
-
-                  <a
-                    href={previewDataUrl}
-                    download="processed-image.webp"
-                    className="mt-6 inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
-                  >
-                    Download WebP
-                  </a>
                 </div>
-
-                <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={previewDataUrl}
-                    alt="Processed WebP preview"
-                    className="h-full w-full object-contain"
-                  />
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </section>
-      </main>
-
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-4 text-xs text-slate-500">
-          <span>Asset Processor</span>
-          <span>Images are processed in-memory and never stored.</span>
+              )}
+            </>
+          )}
         </div>
-      </footer>
+      </main>
     </div>
   );
 }
 
-function MetadataPanel({ title, rows }: { title: string; rows: Array<[string, string]> }) {
+function StatCard({
+  label,
+  value,
+  sub,
+  color,
+}: {
+  label: string;
+  value: string;
+  sub: string;
+  color: string;
+}) {
+  const colorMap: Record<string, string> = {
+    indigo: "from-indigo-500 to-indigo-600",
+    violet: "from-violet-500 to-violet-600",
+    purple: "from-purple-500 to-purple-600",
+    emerald: "from-emerald-500 to-emerald-600",
+  };
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
-      <h3 className="text-sm font-semibold text-slate-950">{title}</h3>
-      <dl className="mt-3 space-y-2 text-sm">
-        {rows.map(([label, value]) => (
-          <div key={label} className="flex justify-between gap-4">
-            <dt className="text-slate-500">{label}</dt>
-            <dd className="text-right font-medium text-slate-900">{value}</dd>
-          </div>
-        ))}
-      </dl>
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p className="text-sm font-medium text-slate-500">{label}</p>
+      <p
+        className={`mt-1 text-3xl font-bold bg-gradient-to-r ${colorMap[color] || colorMap.indigo} bg-clip-text text-transparent`}
+      >
+        {value}
+      </p>
+      <p className="mt-0.5 text-xs text-slate-500">{sub}</p>
     </div>
   );
 }
