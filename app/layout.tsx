@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Roboto_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -7,14 +7,9 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-const robotoMono = Roboto_Mono({
-  variable: "--font-roboto-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "Asset Processor",
-  description: "Resize and convert JPEG, PNG, WebP, and TIFF images into optimized WebP files.",
+  title: "Sales Launchpad",
+  description: "Learn sales fundamentals and track your job search with a built-in CRM.",
 };
 
 export default function RootLayout({
@@ -23,11 +18,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} ${robotoMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="en" className={`${inter.variable} h-full antialiased`}>
+      <body className="min-h-full flex flex-col font-[family-name:var(--font-inter)]">
+        {children}
+      </body>
     </html>
   );
 }
