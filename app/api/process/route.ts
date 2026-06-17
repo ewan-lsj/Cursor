@@ -39,12 +39,12 @@ type ProcessResponse = {
   processingTimeMs: number;
 };
 
-function assertSupportedMimeType(mimetype: string): asserts mimetype is SupportedMimeType {
-  if (!SUPPORTED_MIME_TYPES.includes(mimetype as SupportedMimeType)) {
-    throw new Error(
-      `Unsupported file type: ${mimetype}. Only JPEG, PNG, and WebP are supported.`,
-    );
-  }
+function isSupportedMimeType(mimetype: string): mimetype is SupportedMimeType {
+  return SUPPORTED_MIME_TYPES.includes(mimetype as SupportedMimeType);
+}
+
+function unsupportedMimeTypeMessage(mimetype: string): string {
+  return `Unsupported file type: ${mimetype || "unknown"}. Supported file types are JPEG, PNG, WebP, and TIFF.`;
 }
 
 function toSharpMetadata(metadata: sharp.Metadata, size?: number): SharpMetadata {
@@ -82,7 +82,9 @@ export async function POST(request: Request) {
     size: image.size,
   });
 
-  assertSupportedMimeType(image.type);
+  if (!isSupportedMimeType(image.type)) {
+    return NextResponse.json({ message: unsupportedMimeTypeMessage(image.type) }, { status: 415 });
+  }
 
   const startedAt = performance.now();
   const inputBuffer = Buffer.from(await image.arrayBuffer());
